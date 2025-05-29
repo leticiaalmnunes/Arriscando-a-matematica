@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decodificador e Inversor - Cidade Dorme</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=MedievalSharp&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a2e; 
+            color: #e0e0e0; 
+        }
+        .medieval-font {
+            font-family: 'MedievalSharp', cursive;
+        }
+        .matrix-input-grid {
+            display: grid;
+            grid-template-columns: repeat(var(--matrix-size, 2), 1fr);
+            gap: 8px;
+            width: fit-content;
+            margin: 0 auto;
+        }
+        .matrix-input {
+            width: 60px; 
+            height: 50px;
+            text-align: center;
+            font-size: 1.1rem;
+            background-color: #2a2a4e; 
+            border: 1px solid #4a4a7e; 
+            color: #e0e0e0;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            -moz-appearance: textfield; 
+        }
+        .matrix-input::-webkit-outer-spin-button,
+        .matrix-input::-webkit-inner-spin-button { 
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .matrix-input:focus {
+            background-color: #3a3a5e;
+            border-color: #7a7af0; 
+            box-shadow: 0 0 8px rgba(122, 122, 240, 0.3);
+        }
+        .btn-action { 
+            background-image: linear-gradient(to right, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-action:hover {
+            background-image: linear-gradient(to right, #2575fc 0%, #6a11cb 100%);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .btn-restart { 
+            background-color: #c53030; 
+            border: 1px solid #9b2c2c;
+        }
+        .btn-restart:hover {
+            background-color: #9b2c2c; 
+            background-image: none; 
+        }
+        .calculation-step {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 3px solid #7a7af0; 
+            transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out; 
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .calculation-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .highlight-cell-persistent { 
+            background-color: #5c5c8a !important; 
+            color: white !important;
+            transition: background-color 0.4s ease, transform 0.4s ease; 
+        }
+        .super-highlight-cell { 
+            background-color: #ff5722 !important; 
+            color: white !important;
+            box-shadow: 0 0 12px #ff8a65 !important; 
+            transform: scale(1.18) !important; 
+            z-index: 50;
+            border: 1px solid #ffccbc !important;
+            transition: all 0.35s ease-in-out !important; 
+        }
+        .result-cell, .matrix-display-cell { 
+            width: 60px; 
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            background-color: #3a3a5e;
+            border: 1px solid #4a4a7e;
+            color: #e0e0e0;
+            border-radius: 6px;
+            margin: 4px;
+            transition: all 0.3s ease; 
+        }
+        .revealed-char {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #82e0aa; 
+            padding: 5px 8px;
+            background-color: rgba(130, 224, 170, 0.1);
+            border-radius: 5px;
+            margin: 2px;
+            display: inline-block;
+            border: 1px solid rgba(130, 224, 170, 0.3);
+        }
+        .card {
+            background-color: #24243e; 
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+            margin-bottom: 20px;
+        }
+        .title-main {
+            font-size: 2.2rem;
+            color: #9d79f2; 
+            text-shadow: 0 0 10px rgba(157, 121, 242, 0.5);
+        }
+        .section-title {
+            font-size: 1.3rem;
+            color: #b0a0f0; 
+            margin-bottom: 10px;
+            border-bottom: 1px solid #4a4a7e; 
+            padding-bottom: 5px;
+        }
+        .flying-number {
+            position: absolute;
+            background-color: rgba(122, 122, 240, 0.85); 
+            color: white;
+            padding: 4px 8px;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            z-index: 100;
+            transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1); 
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .log-container { 
+            max-height: 350px; 
+            overflow-y: auto;
+            padding-right: 10px; 
+            border: 1px solid #4a4a7e;
+            border-radius: 6px;
+            background-color: #1f1f38; 
+            margin-top: 10px;
+        }
+        .alphabet-display-container {
+            padding: 10px 0;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #4a4a7e;
+        }
+        .alphabet-letter {
+            padding: 3px 6px;
+            border: 1px solid #4a4a7e;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            margin: 2px;
+            display: inline-block;
+            background-color: #2a2a4e;
+        }
+        .alphabet-letter.highlighted {
+            background-color: #82e0aa; 
+            color: #1a1a2e; 
+            font-weight: bold;
+            transform: scale(1.2); 
+            border-color: #82e0aa;
+            box-shadow: 0 0 10px #82e0aa;
+        }
+        .letter-conversion-emphasis {
+            font-weight: bold;
+            color: #ffda79; 
+        }
+        .matrix-display-grid { 
+            display: grid;
+            grid-template-columns: repeat(var(--matrix-size, 2), auto);
+            gap: 5px;
+            width: fit-content;
+            margin: 5px auto;
+            padding: 5px;
+            border: 1px solid #4a4a7e;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 pt-8">
+
+    <h1 class="medieval-font title-main text-center mb-6">Decodificador e Inversor de Matriz</h1>
+    <p class="text-center text-sm mb-8 max-w-2xl mx-auto">
+        Use o "Inversor de Matriz Chave" abaixo para calcular a K<sup>-1</sup> da sua chave K. Depois, insira K<sup>-1</sup> e sua Matriz Codificada (C) no "Decodificador" para revelar a mensagem.
+    </p>
+    
+    <div class="card w-full max-w-xl mx-auto">
+        <h2 class="section-title medieval-font text-center mb-4">Inversor de Matriz Chave (K)</h2>
+        <div class="text-center">
+            <h3 class="text-md font-semibold mb-2">Insira sua Matriz Chave (K)</h3>
+            <div id="inverterKeyMatrixInputContainer" class="matrix-input-grid">
+                </div>
+        </div>
+        <div class="text-center mt-6 mb-4">
+            <label for="inverterMatrixSize" class="mr-2 text-sm">Tamanho da Matriz Chave:</label>
+            <select id="inverterMatrixSize" class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white">
+                <option value="2">2x2</option>
+                <option value="3">3x3</option>
+            </select>
+        </div>
+        <div class="text-center">
+            <button id="invertKeyButton" class="btn-action medieval-font">Calcular Inversa (K<sup>-1</sup>)</button>
+        </div>
+        <div id="inverterLogContainer" class="log-container mt-4 hidden">
+            <h3 class="text-sm font-semibold mb-2 text-center">Processo de Inversão:</h3>
+            <div id="inverterCalculationStepsLog" class="space-y-2 text-xs sm:text-sm">
+                </div>
+        </div>
+    </div>
+
+
+    <div class="flex flex-col lg:flex-row lg:items-stretch gap-6 w-full max-w-5xl mx-auto mt-8">
+        <div class="lg:w-2/5 flex-shrink-0 flex flex-col"> 
+            <div class="card grow"> 
+                <h2 class="section-title medieval-font text-center mb-4">Decodificador de Mensagem</h2>
+                <div class="space-y-6">
+                    <div class="text-center">
+                        <h3 class="text-md font-semibold mb-2">Matriz Codificada (C)</h3>
+                        <div id="encodedMatrixInputContainer" class="matrix-input-grid">
+                            </div>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-md font-semibold mb-2">Matriz Chave Invertida (K<sup>-1</sup>)</h3>
+                        <p class="text-xs mb-1">(Use o inversor acima ou insira manualmente)</p>
+                        <div id="keyInverseMatrixInputContainer" class="matrix-input-grid"> 
+                            </div>
+                    </div>
+                </div>
+                <div class="text-center mt-6 mb-4">
+                    <label for="decoderMatrixSize" class="mr-2 text-sm">Tamanho das Matrizes (Decodificador):</label>
+                    <select id="decoderMatrixSize" class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white">
+                        <option value="2">2x2</option>
+                        <option value="3">3x3</option>
+                    </select>
+                </div>
+                <div class="text-center">
+                    <button id="decodeButton" class="btn-action medieval-font">Decodificar Mensagem</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:w-3/5 flex flex-col"> 
+            <div id="calculatedKeyInverseDisplayCard" class="card hidden">
+                <h2 class="section-title medieval-font text-center mb-2">K<sup>-1</sup> Calculada (pelo Inversor)</h2>
+                <div id="calculatedKeyInverseMatrixOutput" class="matrix-display-grid mx-auto">
+                    </div>
+                <p class="text-xs text-center mt-2">Use estes valores para a "Matriz Chave Invertida (K<sup>-1</sup>)" no Decodificador.</p>
+            </div>
+
+            <div id="calculationProcessCard" class="card hidden flex flex-col mt-0"> 
+                <h2 class="section-title medieval-font text-center mb-4">Processo de Decodificação</h2>
+                <div id="alphabetDisplayContainer" class="alphabet-display-container text-center">
+                    </div>
+                <div id="decoderCalculationStepsLogContainer" class="log-container"> 
+                    <div id="decoderCalculationStepsLog" class="space-y-2 text-xs sm:text-sm">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultsCard" class="card w-full max-w-3xl mx-auto mt-8 hidden">
+        <h2 class="section-title medieval-font text-center mb-4">Resultado da Decodificação</h2>
+        <div class="text-center">
+            <h3 class="text-md font-semibold mb-2">Matriz Decodificada (P) - Valores</h3>
+            <div id="decodedMatrixOutputContainer" class="matrix-input-grid mx-auto mb-4">
+                </div>
+            <h3 class="text-md font-semibold mt-4 mb-2">Mensagem/Identidade Revelada:</h3>
+            <p id="decodedMessageOutput" class="text-xl medieval-font break-all">
+                </p>
+        </div>
+    </div>
+
+    <div class="text-center my-8"> <button id="restartButton" class="btn-action btn-restart medieval-font">Recomeçar Tudo (Atualizar)</button>
+    </div>
+
+    <div id="flyingNumbersContainer"></div>
+
+    <script>
+        const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_"; 
+        // MODULO_SYS não é mais usado para a K-inversa, apenas para o alfabeto se necessário.
+
+        // IDs para o Inversor
+        const inverterKeyMatrixInputContainer = document.getElementById('inverterKeyMatrixInputContainer');
+        const invertKeyButton = document.getElementById('invertKeyButton');
+        const inverterCalculationStepsLog = document.getElementById('inverterCalculationStepsLog');
+        const inverterMatrixSizeSelect = document.getElementById('inverterMatrixSize');
+        const inverterLogContainer = document.getElementById('inverterLogContainer');
+        const calculatedKeyInverseDisplayCard = document.getElementById('calculatedKeyInverseDisplayCard'); 
+        const calculatedKeyInverseMatrixOutput = document.getElementById('calculatedKeyInverseMatrixOutput'); 
+        
+        // IDs para o Decodificador
+        const encodedMatrixInputContainer = document.getElementById('encodedMatrixInputContainer');
+        const keyInverseMatrixInputContainer = document.getElementById('keyInverseMatrixInputContainer'); 
+        const decodedMatrixOutputContainer = document.getElementById('decodedMatrixOutputContainer');
+        const decodeButton = document.getElementById('decodeButton');
+        const decoderCalculationStepsLog = document.getElementById('decoderCalculationStepsLog'); 
+        const decodedMessageOutput = document.getElementById('decodedMessageOutput');
+        const decoderMatrixSizeSelect = document.getElementById('decoderMatrixSize'); 
+        const calculationProcessCard = document.getElementById('calculationProcessCard');
+        const resultsCard = document.getElementById('resultsCard');
+        const flyingNumbersContainer = document.getElementById('flyingNumbersContainer');
+        const alphabetDisplayContainer = document.getElementById('alphabetDisplayContainer');
+        const restartButton = document.getElementById('restartButton'); 
+
+        let currentInverterMatrixSize = 2;
+        let currentDecoderMatrixSize = 2;
+        let currentlyHighlightedRowCol = []; 
+
+        function initializeAlphabetDisplay() {
+            alphabetDisplayContainer.innerHTML = ''; 
+            ALPHABET.split('').forEach((char, index) => { 
+                const span = document.createElement('span');
+                span.className = 'alphabet-letter';
+                span.id = `alpha-${char === '_' ? 'underscore' : char}`; 
+                span.textContent = `${char}(${index + 1})`; 
+                alphabetDisplayContainer.appendChild(span);
+            });
+        }
+        
+        async function highlightAlphabetLetterAnimated(charToHighlight, numericValue) { 
+            const prevHighlighted = alphabetDisplayContainer.querySelector('.highlighted');
+            if (prevHighlighted) {
+                prevHighlighted.classList.remove('highlighted');
+            }
+            const targetId = `alpha-${charToHighlight === '_' ? 'underscore' : charToHighlight}`;
+            const currentLetterEl = document.getElementById(targetId);
+            if (currentLetterEl) {
+                currentLetterEl.classList.add('highlighted');
+                currentLetterEl.style.transform = 'scale(1.35)';
+                await new Promise(resolve => setTimeout(resolve, 150));
+                currentLetterEl.style.transform = 'scale(1.2)'; 
+            }
+        }
+
+        function createMatrixInputs(container, size, matrixIdPrefix) {
+            container.innerHTML = '';
+            container.style.setProperty('--matrix-size', size);
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const input = document.createElement('input');
+                    input.type = 'number'; 
+                    input.step = 'any'; 
+                    input.className = 'matrix-input';
+                    input.id = `${matrixIdPrefix}-${i}-${j}`;
+                    
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault(); 
+                            
+                            const idParts = e.target.id.split('-');
+                            const baseId = idParts.slice(0, -2).join('-'); 
+                            const r = parseInt(idParts[idParts.length - 2]);
+                            const c = parseInt(idParts[idParts.length - 1]);
+                            
+                            // Determina o tamanho correto da grade atual
+                            let currentSizeForThisGrid;
+                            if (baseId === 'inverterKeyMatrixInputContainer') {
+                                currentSizeForThisGrid = currentInverterMatrixSize;
+                            } else {
+                                currentSizeForThisGrid = currentDecoderMatrixSize;
+                            }
+
+                            let nextR = r;
+                            let nextC = c + 1;
+
+                            if (nextC >= currentSizeForThisGrid) { 
+                                nextC = 0;
+                                nextR = r + 1;
+                            }
+
+                            if (nextR < currentSizeForThisGrid) { 
+                                const nextInputId = `${baseId}-${nextR}-${nextC}`;
+                                const nextInputElement = document.getElementById(nextInputId);
+                                if (nextInputElement) {
+                                    nextInputElement.focus();
+                                    nextInputElement.select(); 
+                                }
+                            } else if (r === currentSizeForThisGrid - 1 && c === currentSizeForThisGrid - 1) {
+                                if (baseId === 'inverterKeyMatrixInputContainer') {
+                                    invertKeyButton.focus();
+                                } else if (baseId === 'encodedMatrixInputContainer') {
+                                     const firstCellKeyInv = document.getElementById(`keyInverseMatrixInputContainer-0-0`);
+                                     if(firstCellKeyInv) firstCellKeyInv.focus();
+                                } else if (baseId === 'keyInverseMatrixInputContainer') { 
+                                    decodeButton.focus();
+                                }
+                            }
+                        }
+                    });
+                    container.appendChild(input);
+                }
+            }
+        }
+
+        function getMatrixFromInputs(containerId, size) {
+            const matrix = [];
+            for (let i = 0; i < size; i++) {
+                matrix[i] = [];
+                for (let j = 0; j < size; j++) {
+                    const inputElement = document.getElementById(`${containerId}-${i}-${j}`);
+                    const value = parseFloat(inputElement.value); 
+                    if (isNaN(value)) {
+                        showError(`Valor inválido na Matriz ${containerId.includes('inverter') ? 'Chave (K)' : (containerId.includes('encoded') ? '(C)' : '(K-1)')} em [${i+1},${j+1}]. Insira um número.`, containerId.includes('inverter'));
+                        throw new Error("Invalid input");
+                    }
+                    matrix[i][j] = value;
+                }
+            }
+            return matrix;
+        }
+        
+        function showError(message, isForKeyInverter = false) {
+            const logElement = isForKeyInverter ? inverterCalculationStepsLog : decoderCalculationStepsLog;
+            if (logElement) { 
+                logElement.innerHTML = `<p class="text-red-400 font-bold">${message}</p>`;
+            }
+            alert(`Erro: ${message}`);
+        }
+
+        async function addCalculationStep(message, delay = 1000, logElement = decoderCalculationStepsLog) { 
+            return new Promise(resolve => {
+                setTimeout(async () => {
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'calculation-step';
+                    stepDiv.innerHTML = message;
+                    if (logElement) { 
+                        logElement.appendChild(stepDiv);
+                        void stepDiv.offsetWidth; 
+                        stepDiv.classList.add('visible');
+                        if (logElement.parentElement) {
+                           logElement.parentElement.scrollTop = logElement.parentElement.scrollHeight;
+                        }
+                    }
+                    setTimeout(resolve, Math.max(400, delay / 2)); 
+                }, delay);
+            });
+        }
+
+        function clearPersistentHighlights() {
+            currentlyHighlightedRowCol.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('highlight-cell-persistent');
+            });
+            currentlyHighlightedRowCol = [];
+        }
+
+        function applyPersistentHighlights(rowElementsIds, colElementsIds) {
+            clearPersistentHighlights(); 
+            rowElementsIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.add('highlight-cell-persistent');
+                    currentlyHighlightedRowCol.push(id);
+                }
+            });
+            colElementsIds.forEach(id => { 
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.add('highlight-cell-persistent'); 
+                    currentlyHighlightedRowCol.push(id);
+                }
+            });
+        }
+        
+        async function superHighlightAndFly(valCId, kInvInputCellId, valC, valKInv, targetLogElement) { 
+            const elC = document.getElementById(valCId);
+            const elKInv = document.getElementById(kInvInputCellId); 
+
+            if (elC) elC.classList.add('super-highlight-cell');
+            if (elKInv) elKInv.classList.add('super-highlight-cell'); 
+            
+            await new Promise(resolve => setTimeout(resolve, 500)); 
+
+            createFlyingNumber(valC, elC, targetLogElement);
+            await new Promise(resolve => setTimeout(resolve, 150)); 
+            createFlyingNumber(valKInv, elKInv, targetLogElement); 
+            
+            await new Promise(resolve => setTimeout(resolve, 600)); 
+
+            if (elC) elC.classList.remove('super-highlight-cell');
+            if (elKInv) elKInv.classList.remove('super-highlight-cell');
+        }
+
+
+        function createFlyingNumber(value, startElement, endElement, duration = 700) { 
+            if (!startElement || !endElement) return;
+
+            const flyingNum = document.createElement('div');
+            flyingNum.className = 'flying-number';
+            flyingNum.textContent = typeof value === 'number' ? value.toFixed(1) : value; 
+            flyingNumbersContainer.appendChild(flyingNum);
+
+            const startRect = startElement.getBoundingClientRect();
+            const endContainerRect = endElement.getBoundingClientRect(); 
+            
+            flyingNum.style.left = `${startRect.left + startRect.width / 2 - flyingNum.offsetWidth / 2}px`;
+            flyingNum.style.top = `${startRect.top + startRect.height / 2 - flyingNum.offsetHeight / 2}px`;
+            flyingNum.style.opacity = '0';
+
+            void flyingNum.offsetWidth;
+
+            const midX = endContainerRect.left + endContainerRect.width / 2 - flyingNum.offsetWidth / 2;
+            const midY = endContainerRect.top + 30 - flyingNum.offsetHeight / 2; 
+
+            flyingNum.style.opacity = '1';
+            flyingNum.style.transform = `translate(${midX - (startRect.left + startRect.width / 2)}px, ${midY - (startRect.top + startRect.height / 2)}px) scale(1.3)`;
+            
+            setTimeout(() => {
+                const finalX = midX + (Math.random() - 0.5) * 40; 
+                const finalY = midY + 20 + (Math.random() - 0.5) * 20;
+                flyingNum.style.left = `${finalX}px`;
+                flyingNum.style.top = `${finalY}px`;
+                flyingNum.style.transform = 'scale(0.8)';
+                flyingNum.style.opacity = '0.7';
+            }, duration * 0.6);
+
+            setTimeout(() => {
+                flyingNum.style.opacity = '0';
+                setTimeout(() => flyingNum.remove(), 200);
+            }, duration * 0.9);
+        }
+
+        // --- Funções Matemáticas para Inversão de Matriz (NÃO MODULAR para elementos de K_inv) ---
+        function determinant(matrix) { 
+            const size = matrix.length;
+            if (size === 2) {
+                return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+            }
+            if (size === 3) {
+                return (
+                    matrix[0][0] * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1]) -
+                    matrix[0][1] * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0]) +
+                    matrix[0][2] * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0])
+                );
+            }
+            return 0; 
+        }
+
+        function adjugate(matrix) { 
+            const size = matrix.length;
+            if (size === 2) {
+                return [
+                    [matrix[1][1], -matrix[0][1]],
+                    [-matrix[1][0], matrix[0][0]]
+                ];
+            }
+            if (size === 3) {
+                const cof = Array(3).fill(null).map(() => Array(3).fill(0)); 
+                cof[0][0] = matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1];
+                cof[0][1] = -(matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0]);
+                cof[0][2] = matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0];
+                
+                cof[1][0] = -(matrix[0][1] * matrix[2][2] - matrix[0][2] * matrix[2][1]);
+                cof[1][1] = matrix[0][0] * matrix[2][2] - matrix[0][2] * matrix[2][0];
+                cof[1][2] = -(matrix[0][0] * matrix[2][1] - matrix[0][1] * matrix[2][0]);
+
+                cof[2][0] = matrix[0][1] * matrix[1][2] - matrix[0][2] * matrix[1][1];
+                cof[2][1] = -(matrix[0][0] * matrix[1][2] - matrix[0][2] * matrix[1][0]);
+                cof[2][2] = matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+                
+                const adj = Array(3).fill(null).map(() => Array(3).fill(0));
+                for(let i=0; i<3; i++) {
+                    for(let j=0; j<3; j++) {
+                        adj[j][i] = cof[i][j];
+                    }
+                }
+                return adj;
+            }
+            return [[]]; 
+        }
+        
+        function scalarMultiplyMatrixNonModular(matrix, scalar) {
+            return matrix.map(row => 
+                row.map(val => val * scalar) 
+            );
+        }
+        
+        function formatMatrixForDisplay(matrix, matrixIdPrefix = "displayedMatrix") { 
+            let html = `<div class="matrix-display-grid" style="--matrix-size: ${matrix.length};">`;
+            matrix.forEach((row, rIndex) => {
+                row.forEach((val, cIndex) => {
+                    html += `<div class="matrix-display-cell" id="${matrixIdPrefix}-${rIndex}-${cIndex}">${typeof val === 'number' ? val.toFixed(1) : val}</div>`;
+                });
+            });
+            html += '</div>';
+            return html;
+        }
+
+        async function calculateAndDisplayKeyInverse() {
+            inverterLogContainer.classList.remove('hidden');
+            inverterCalculationStepsLog.innerHTML = '';
+            calculatedKeyInverseDisplayCard.classList.add('hidden'); 
+            await addCalculationStep("<b>Calculando a Inversa da Matriz Chave (K<sup>-1</sup>)...</b>", 100, inverterCalculationStepsLog);
+
+            let keyMatrixUser;
+            try {
+                keyMatrixUser = getMatrixFromInputs('inverterKeyMatrixInputContainer', currentInverterMatrixSize);
+            } catch (error) {
+                return; 
+            }
+
+            const detK = determinant(keyMatrixUser);
+            await addCalculationStep(`1. Determinante de K: <span class="letter-conversion-emphasis">${detK.toFixed(1)}</span>`, 1200, inverterCalculationStepsLog);
+
+            if (Math.abs(detK) < 1e-9) { 
+                await addCalculationStep(`<span class="text-red-400 font-bold">Erro: Determinante é zero (ou muito próximo de zero). A matriz chave não é invertível.</span>`, 0, inverterCalculationStepsLog);
+                return null;
+            }
+
+            const invDetK = 1 / detK; 
+            await addCalculationStep(`2. Inverso do determinante (1/det(K)): <span class="letter-conversion-emphasis">${invDetK.toFixed(4)}</span> (aproximado)`, 1200, inverterCalculationStepsLog);
+
+            const adjK = adjugate(keyMatrixUser);
+            await addCalculationStep(`3. Matriz Adjunta de K (Adj(K)): ${formatMatrixForDisplay(adjK, "adjKDisplay")}`, 1500, inverterCalculationStepsLog);
+            
+            const keyInverseMatrix = scalarMultiplyMatrixNonModular(adjK, invDetK); 
+            await addCalculationStep(`4. Matriz Chave Invertida (K<sup>-1</sup> = (1/det(K)) × Adj(K)): ${formatMatrixForDisplay(keyInverseMatrix, "keyInverseFinalDisplay")}`, 1500, inverterCalculationStepsLog);
+            
+            calculatedKeyInverseMatrixOutput.innerHTML = formatMatrixForDisplay(keyInverseMatrix, "calculatedKInv"); 
+            calculatedKeyInverseDisplayCard.classList.remove('hidden');
+            calculationProcessCard.classList.add('hidden'); 
+
+            await addCalculationStep(`<b>Copie os valores da K<sup>-1</sup> acima e cole/digite no campo "Matriz Chave Invertida (K<sup>-1</sup>)" do decodificador abaixo.</b>`, 100, inverterCalculationStepsLog);
+            
+            return keyInverseMatrix; 
+        }
+
+
+        async function multiplyMatricesAndDecode() {
+            decoderCalculationStepsLog.innerHTML = ''; 
+            decodedMessageOutput.textContent = '';
+            decodedMatrixOutputContainer.innerHTML = '';
+            initializeAlphabetDisplay(); 
+            clearPersistentHighlights(); 
+            calculatedKeyInverseDisplayCard.classList.add('hidden'); 
+            calculationProcessCard.classList.remove('hidden'); 
+            resultsCard.classList.add('hidden'); 
+
+            let encodedMatrix, keyInverseMatrix; 
+            try {
+                encodedMatrix = getMatrixFromInputs('encodedMatrixInputContainer', currentDecoderMatrixSize);
+                keyInverseMatrix = getMatrixFromInputs('keyInverseMatrixInputContainer', currentDecoderMatrixSize); 
+            } catch (error) {
+                calculationProcessCard.classList.add('hidden');
+                return;
+            }
+            
+            const resultMatrix = [];
+            let decodedText = "";
+
+            await addCalculationStep("Iniciando a decodificação da mensagem...", 400, decoderCalculationStepsLog);
+            await addCalculationStep("Multiplicando Matriz Codificada (C) pela Chave Invertida (K<sup>-1</sup>) fornecida...", 500, decoderCalculationStepsLog);
+
+
+            for (let i = 0; i < currentDecoderMatrixSize; i++) { 
+                resultMatrix[i] = [];
+                for (let j = 0; j < currentDecoderMatrixSize; j++) { 
+                    let sum = 0; 
+                    
+                    const idsForRowC = [];
+                    for(let k_h = 0; k_h < currentDecoderMatrixSize; k_h++) {
+                        idsForRowC.push(`encodedMatrixInputContainer-${i}-${k_h}`);
+                    }
+                    const idsForColKInv = []; 
+                     for(let k_h = 0; k_h < currentDecoderMatrixSize; k_h++) {
+                        idsForColKInv.push(`keyInverseMatrixInputContainer-${k_h}-${j}`); 
+                    }
+                                        
+                    applyPersistentHighlights(idsForRowC, idsForColKInv); 
+
+                    await addCalculationStep(
+                        `<b>Calculando P[${i+1},${j+1}]</b>: Multiplicando linha ${i+1} de C pela coluna ${j+1} de K<sup>-1</sup>.`,
+                        1800, decoderCalculationStepsLog 
+                    );
+                    
+                    await addCalculationStep(
+                        `Cada número da linha destacada de C é multiplicado pelo seu par correspondente na coluna destacada de K<sup>-1</sup>. Os resultados são somados.`,
+                        2200, decoderCalculationStepsLog 
+                    );
+
+                    let termsString = "";
+                    for (let k = 0; k < currentDecoderMatrixSize; k++) { 
+                        const valC = encodedMatrix[i][k]; 
+                        const valKInv = keyInverseMatrix[k][j]; 
+                        sum += valC * valKInv;
+                        
+                        const term = `${valC.toFixed(1)}×${valKInv.toFixed(1)}`; 
+                        termsString += `(${term})`;
+                        if (k < currentDecoderMatrixSize - 1) {
+                            termsString += " + ";
+                        }
+                        
+                        await addCalculationStep(`Multiplicando par: <span class="font-mono text-amber-300">${term}</span>`, 500, decoderCalculationStepsLog); 
+                        await superHighlightAndFly(
+                            `encodedMatrixInputContainer-${i}-${k}`, 
+                            `keyInverseMatrixInputContainer-${k}-${j}`, 
+                            valC, valKInv, decoderCalculationStepsLog
+                        );
+                         await new Promise(resolve => setTimeout(resolve, 500)); 
+                    }
+                    await addCalculationStep(`<u>Soma dos Produtos</u>: ${termsString} = <span class="letter-conversion-emphasis">${sum.toFixed(1)}</span>`, 1200, decoderCalculationStepsLog); 
+                    
+                    const finalPositionRaw = sum; 
+                    const finalPositionRounded = Math.round(finalPositionRaw); 
+
+                    resultMatrix[i][j] = finalPositionRaw; 
+                                        
+                    let revealedLetter = '?';
+                    if (finalPositionRounded >= 1 && finalPositionRounded <= ALPHABET.length) {
+                        revealedLetter = ALPHABET[finalPositionRounded - 1]; 
+                    } else {
+                        console.warn(`Posição arredondada ${finalPositionRounded} (de ${finalPositionRaw.toFixed(1)}) está fora do intervalo do alfabeto [1-${ALPHABET.length}] para P[${i+1},${j+1}].`);
+                    }
+                    
+                    await addCalculationStep(
+                        `O resultado da soma (<span class="letter-conversion-emphasis">${finalPositionRaw.toFixed(1)}</span>) é arredondado para <span class="letter-conversion-emphasis">${finalPositionRounded}</span>.<br/>Esta é a posição no alfabeto (A=1...Z=26, \_=27).<br/>Letra correspondente: <span class="medieval-font text-xl letter-conversion-emphasis">${revealedLetter}</span>`,
+                        1800, decoderCalculationStepsLog 
+                    );
+                    if(revealedLetter !== '?') {
+                        await highlightAlphabetLetterAnimated(revealedLetter, finalPositionRounded); 
+                    }
+                    decodedText += revealedLetter;
+                    clearPersistentHighlights(); 
+                }
+            }
+            
+            resultsCard.classList.remove('hidden'); 
+            displayMatrix(resultMatrix, decodedMatrixOutputContainer); 
+            
+            decodedMessageOutput.innerHTML = '';
+            for(const char of decodedText) {
+                const span = document.createElement('span');
+                span.className = 'revealed-char';
+                span.textContent = char;
+                decodedMessageOutput.appendChild(span);
+                await new Promise(resolve => setTimeout(resolve, 200)); 
+            }
+
+            await addCalculationStep("<b>✨ Decodificação Concluída! Veja a mensagem abaixo. ✨</b>", 300, decoderCalculationStepsLog);
+            resultsCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+        }
+
+        function displayMatrix(matrix, container) {
+            container.innerHTML = '';
+            container.style.setProperty('--matrix-size', matrix.length);
+            matrix.forEach(row => {
+                row.forEach(val => {
+                    const cell = document.createElement('div');
+                    cell.className = 'result-cell'; 
+                    cell.textContent = typeof val === 'number' ? val.toFixed(1) : val; 
+                    container.appendChild(cell);
+                });
+            });
+        }
+
+        // Event Listeners para o Inversor
+        inverterMatrixSizeSelect.addEventListener('change', (event) => {
+            currentInverterMatrixSize = parseInt(event.target.value);
+            createMatrixInputs(inverterKeyMatrixInputContainer, currentInverterMatrixSize, 'inverterKeyMatrixInputContainer');
+            inverterLogContainer.classList.add('hidden');
+            inverterCalculationStepsLog.innerHTML = '';
+            calculatedKeyInverseDisplayCard.classList.add('hidden');
+        });
+        invertKeyButton.addEventListener('click', calculateAndDisplayKeyInverse);
+
+
+        // Event Listeners para o Decodificador
+        decoderMatrixSizeSelect.addEventListener('change', (event) => {
+            currentDecoderMatrixSize = parseInt(event.target.value);
+            createMatrixInputs(encodedMatrixInputContainer, currentDecoderMatrixSize, 'encodedMatrixInputContainer');
+            createMatrixInputs(keyInverseMatrixInputContainer, currentDecoderMatrixSize, 'keyInverseMatrixInputContainer'); 
+            calculationProcessCard.classList.add('hidden');
+            calculatedKeyInverseDisplayCard.classList.add('hidden'); 
+            resultsCard.classList.add('hidden');
+            decoderCalculationStepsLog.innerHTML = ''; 
+            decodedMessageOutput.textContent = '';
+            decodedMatrixOutputContainer.innerHTML = '';
+            initializeAlphabetDisplay(); 
+        });
+        decodeButton.addEventListener('click', multiplyMatricesAndDecode);
+        restartButton.addEventListener('click', () => { 
+            window.location.reload();
+        });
+
+
+        function initializeAllInputs() {
+            createMatrixInputs(inverterKeyMatrixInputContainer, currentInverterMatrixSize, 'inverterKeyMatrixInputContainer');
+            createMatrixInputs(encodedMatrixInputContainer, currentDecoderMatrixSize, 'encodedMatrixInputContainer');
+            createMatrixInputs(keyInverseMatrixInputContainer, currentDecoderMatrixSize, 'keyInverseMatrixInputContainer'); 
+            initializeAlphabetDisplay(); 
+        }
+
+        // Inicializa tudo
+        initializeAllInputs();
+    </script>
+</body>
+</html>
