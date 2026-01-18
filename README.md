@@ -106,6 +106,21 @@ Sua missão é fazer o outro jogador acertar o conceito apenas com palavras-chav
 
 <br>
 
+### Execução do código
+Para executar o progama, é necessário:
+
+* Baixar todos os arquivos da pasta "Mega Senha - IPA". Eles são necessários para manter o *design* e trilha sonora do jogo.
+* Abrir o terminal e executar o comando <code> pyhton index.py </code> ou <code> pyhton index_2.py </code>.
+    *  <code> index.py </code> contém uma versão inicial do jogo, com dezenas de conceitos voltados principalmente para ensino médio.
+    *  <code> index_2.py </code> contém uma versão atualizada do jogo, permitindo escolher níveis com conceitos de ensino fundamental, ensino médio ou ensino superior.
+* Comandos:
+    *  ***Enter***: iniciar o jogo, contabilizar acerto, ou voltar para a página inicial ao final de uma partida.
+    *  ***P***: pular um conceito --- não contabiliza acerto e o conceito não reaparece naquela partida; pode ser usado duas vezes por partida.
+    *  ***Mouse***: selação de nível no <code>index_2.py</code>.
+ 
+<br>
+
+
 ## Impostor
 
 A **dinâmica do Impostor** trata-se uma atividade didática que visa trabalhar conceitos matemáticos de ensino fundamental e médio, e também o trabalho em equipe - podendo ser adaptada para o ensino superior utilizando conceitos mais complexos. Aqui, trouxemos duas abordagens para a dinâmica: uma manual, e outra com parte computacional.
